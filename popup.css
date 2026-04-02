@@ -29,7 +29,7 @@
   }
 }
 
-body { font-family:'DM Sans',-apple-system,sans-serif; background:var(--bg); color:var(--tx); width:480px; }
+body { font-family:'DM Sans',-apple-system,sans-serif; background:var(--bg); color:var(--tx); width:500px; }
 
 /* Header */
 .hdr {
@@ -152,25 +152,59 @@ body { font-family:'DM Sans',-apple-system,sans-serif; background:var(--bg); col
 .btn-action { width:100%; background:var(--btn-bg); border:1px solid var(--btn-bd); border-radius:8px; color:var(--btn-tx); font-size:12px; font-weight:600; padding:9px 0; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:6px; }
 .btn-action:hover { background:rgba(254,44,85,.08); border-color:rgba(254,44,85,.2); color:var(--red); }
 
+
+
 .features-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
+  border-top: 1px solid var(--bd);
 }
 .features-grid .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
   border-top: none;
   border-bottom: 1px solid var(--bd);
   border-right: 1px solid var(--bd);
+  margin: 0;
 }
 .features-grid .row:nth-child(even) {
   border-right: none;
 }
-
-.features-grid .row {
-    padding: 10px;
-    box-sizing: border-box;
+.features-grid .row:nth-last-child(-n+2) { /* If it has an even number, bottom rows shouldn't have bottom border, but let's keep it simple and just let it have one or remove later */
 }
-
-.features-grid {
-    border-top: 1px solid var(--bd);
+.features-grid .ri {
+  flex: 1;
+  padding-right: 10px;
+}
+.features-grid .rn {
+  display: flex !important;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+.features-grid .rd {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--mt);
+}
+.features-grid .txt {
+  flex: 1;
+  padding-right: 10px;
+}
+.features-grid .txt div:first-child {
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.features-grid .txt div.sub {
+  font-size: 10px;
+  color: var(--mt);
+  line-height: 1.35;
 }
