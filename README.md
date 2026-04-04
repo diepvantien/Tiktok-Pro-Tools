@@ -2,18 +2,22 @@
 
 [![Download Extension](https://img.shields.io/badge/Download_Extension-Download_ZIP-success?style=for-the-badge&logo=googlechrome)](https://github.com/diepvantien/Tiktok-Pro-Tools/archive/refs/heads/main.zip)
 
-A powerful Chrome extension that enhances your TikTok web experience with essential tools for audio, video, and UI customization.
+A powerful Chrome extension that completely transforms your TikTok web experience with essential tools for audio formatting, video playback, auto-scrolling, and intelligent UI customization.
 
 ---
 
 ## ✨ Features
 
-- ⏯ **Background Play**: Keep TikTok videos playing even when you switch to another tab.
-- ⚡ **0-4x Video Speed**: Fine-tune playback speed from 0 to 4x, with quick presets (0.5x / 1x / 1.5x / 2x).
-- 🔊 **Volume Control**: Adjust the audio volume precisely from 0% to 100%.
-- 🎛️ **Advanced EQ & Audio Filters**: Customize your sound with presets like Bass Boost, Treble Boost, Vocal Boost, EDM, Lo-Fi, 3D Audio, and Night Mode.
-- 📥 **Media Downloader**: Easily download TikTok videos (without watermark), photos, and MP3 audio directly from the page.
-- 🧹 **Clean Mode & UI Tools**: Enhance the viewing experience by removing clutter and optimizing fonts.
+- ⏯ **Background Play**: Keep TikTok videos playing even when you switch to another tab or minimize the browser.
+- ⏸ **Smart Auto-Pause**: Automatically pause TikTok when another tab starts playing media, and resume when it stops.
+- 📺 **Auto PiP (Picture-in-Picture)**: Automatically pops the video out into a mini-player when you switch tabs so you never miss a moment.
+- 🎛️ **Advanced Audio Equalizer (EQ)**: Customize your sound with presets like Bass Boost, Treble Boost, Vocal Boost. Includes an immersive **360° Audio (8D)** mode!
+- 🔊 **Volume Normalizer**: Automatically balance loud and quiet videos so you don't get jump-scared by sudden volume spikes.
+- ⚡ **Video Speed Controller**: Fine-tune playback speed from 0x to 4x.
+- 🧹 **Clean Mode & UI Tools**: Enhance your viewing experience by hiding text overlays, descriptions, and UI elements.
+- 🛒 **Unlock Regional Shop Videos**: Watch restricted or localized TikTok Shop videos that are normally blocked in your region.
+- 🚫 **Auto Skip & Hide by Keywords**: Automatically skip videos and blur comments that contain specific keywords you define.
+- 📥 **Media Downloader**: Easily download TikTok videos (without watermarks) and MP3 audio directly using the provided URL box.
 
 ---
 
@@ -32,15 +36,20 @@ Toggle the **"Developer mode"** switch located in the top right corner of the pa
 Click **"Load unpacked"** and select the folder you extracted in Step 1.
 
 ### Step 5: Start Using!
-Go to [TikTok.com](https://tiktok.com) and the floating control panel will appear on the right side of the screen.
+Go to [TikTok.com](https://tiktok.com). Click on the extension icon in your toolbar to open the control panel, adjust the settings to your liking, and enjoy!
+
+*(Note: If features don't apply immediately, please press F5 to refresh your TikTok tab).*
 
 ---
 
 ## ☕ Author & Support
 
-Created by **diepvantien**. If you find this extension helpful, please consider supporting the development!
+Developed with ❤️ by **Diep Van Tien**. 
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/diepvantien) 
+If this extension saves your life and improves your workflow every day, please consider supporting me! This helps me maintain the project and add more incredible features. 
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/tixuno)
+[![Donate Momo](https://img.shields.io/badge/Donate-Momo-AE2070?style=for-the-badge&logo=appveyor&logoColor=white)](https://me.momo.vn/OeIGiJsViJfDfntmiRId)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/diepvantien)
 
 **Email:** dieptien290620@gmail.com
@@ -49,9 +58,9 @@ Created by **diepvantien**. If you find this extension helpful, please consider 
 
 ## 📝 Disclaimer
 
-- **Background Play**: Works by intercepting visibility events that TikTok uses to pause playback.
-- **Privacy First**: This extension does not collect or store any of your personal user data.
+- **Privacy First**: This extension operates entirely on your device and does not collect, track, or share any personal user data.
+- **Cross-Origin Audio**: EQ and 360 Audio modifications are securely injected and only active when you interact with the page.
 
 ---
 
-*Made with ❤️ for TikTok power users*
+*Made with ❤️ for TikTok power users by Diep Van Tien*

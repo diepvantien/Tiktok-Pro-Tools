@@ -2,6 +2,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const el = id => document.getElementById(id);
   const set = (id, v) => { const e = el(id); if (e) e.textContent = v; };
 
+  // Feature Section Collapsible
+  const featuresToggleRow = el('features-toggle-row');
+  const featuresGridContent = el('features-grid-content');
+  const featuresArrow = el('features-arrow');
+  
+  if (featuresToggleRow && featuresGridContent && featuresArrow) {
+      chrome.storage.local.get({featuresExpanded: true}, res => {
+          const isExp = res.featuresExpanded;
+          featuresGridContent.style.display = isExp ? 'grid' : 'none';
+          featuresArrow.style.transform = isExp ? 'rotate(180deg)' : 'rotate(0deg)';
+      });
+
+      featuresToggleRow.addEventListener('click', () => {
+          const isCurrentlyExpanded = featuresGridContent.style.display !== 'none';
+          const nextState = !isCurrentlyExpanded;
+          featuresGridContent.style.display = nextState ? 'grid' : 'none';
+          featuresArrow.style.transform = nextState ? 'rotate(180deg)' : 'rotate(0deg)';
+          chrome.storage.local.set({featuresExpanded: nextState});
+      });
+  }
+
   // Keyword Tags Logic
   let cachedKws = [];
   let isKwExpanded = false;
@@ -18,10 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cachedKws.length > 5 && !isKwExpanded) {
       displayKws = cachedKws.slice(0, 5);
       kwMoreBtn.style.display = 'block';
-      kwMoreBtn.innerText = `Nhiều hơn (+${cachedKws.length - 5})`;
+      kwMoreBtn.innerText = `More (+${cachedKws.length - 5})`;
     } else if (cachedKws.length > 5 && isKwExpanded) {
       kwMoreBtn.style.display = 'block';
-      kwMoreBtn.innerText = 'Rút gọn lại';
+      kwMoreBtn.innerText = 'See less';
     }
 
     displayKws.forEach((kw) => {
@@ -108,15 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   chrome.storage.sync.get(null, data => {
-    const s = { backgroundPlay:true, autoScroll:false, speed:1, eq:'normal', eqBass:0, eqMid:0, eqTreble:0, cleanMode:false, unlockShop:false, blockKeywords:'', ...data };
+    const s = { backgroundPlay:true, autoPiP:true, speed:1, eq:'normal', eqBass:0, eqMid:0, eqTreble:0, cleanMode:false, unlockShop:false, blockKeywords:'', ...data };
     
-    const cbg = el('c-bg'); if (cbg) cbg.checked = !!s.backgroundPlay;
-    const casc = el('c-autosc'); if (casc) casc.checked = !!s.autoScroll;
+        const cbg = el('c-bg'); if (cbg) cbg.checked = !!s.backgroundPlay;
     const ccl = el('c-clean'); if (ccl) ccl.checked = !!s.cleanMode;
+    const cpip = el('c-pip'); if (cpip) cpip.checked = !!s.autoPiP;
+    const caup = el('c-autopause'); if (caup) caup.checked = !!s.autoPause;
+    const cvol = el('c-volnorm'); if (cvol) cvol.checked = !!s.volNorm;
     const cshop = el('c-shop'); if (cshop) cshop.checked = !!s.unlockShop;
     const ikw = el('i-keywords'); if (ikw) ikw.value = '';
     if (s.blockKeywords) { cachedKws = s.blockKeywords.split(',').filter(k=>k); renderTags(); }
     const seq = el('s-eq'); if (seq) seq.value = s.eq;
+    const c360 = el('c-audio360'); if (c360) c360.checked = !!s.audio360;
 
     const ss = el('s-speed'); 
     if (ss) { ss.value = s.speed; ss.style.setProperty('--fill', ((s.speed / 4) * 100) + '%'); }
@@ -142,9 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const apply = () => {
-    const cbg = el('c-bg');
-    const casc = el('c-autosc');
-    const ccl = el('c-clean');
+    const cbg = el('c-bg');    const ccl = el('c-clean');
     const cshop = el('c-shop');
     const seq = el('s-eq');
     const ss = el('s-speed');
@@ -158,13 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
           const settings = { 
-        backgroundPlay: cbg.checked, 
-        autoScroll: casc ? casc.checked : false,
-        speed: +ss.value, 
+        backgroundPlay: cbg.checked, autoPiP: document.getElementById('c-pip') ? document.getElementById('c-pip').checked : false, speed: +ss.value, 
         eq: seq ? seq.value : 'normal',
         eqBass: sbass ? +sbass.value : 0,
         eqMid: smid ? +smid.value : 0,
         eqTreble: streble ? +streble.value : 0,
+        audio360: document.getElementById('c-audio360') ? document.getElementById('c-audio360').checked : false,
         cleanMode: ccl ? ccl.checked : false,
         unlockShop: cshop ? cshop.checked : false,
         autoPause: el('c-autopause') ? el('c-autopause').checked : false,
@@ -187,6 +208,16 @@ document.addEventListener('DOMContentLoaded', () => {
       apply();
     });
   }
+
+  const btnPipHelp = el('btn-pip-help');
+  const pipHelpBox = el('pip-help-box');
+  if (btnPipHelp && pipHelpBox) {
+    btnPipHelp.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      pipHelpBox.style.display = pipHelpBox.style.display === 'block' ? 'none' : 'block';
+    });
+  }
   
   document.querySelectorAll('.ps-btn').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -202,11 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const cbg = el('c-bg'); if (cbg) cbg.addEventListener('change', apply);
-  const casc = el('c-autosc'); if (casc) casc.addEventListener('change', apply);
-      const ccl = el('c-clean'); if (ccl) ccl.addEventListener('change', apply);
+  const cpip = el('c-pip'); if(cpip) cpip.addEventListener('change', apply); const ccl = el('c-clean'); if (ccl) ccl.addEventListener('change', apply);
     const cshop = el('c-shop'); if (cshop) cshop.addEventListener('change', apply);
     const caup = el('c-autopause'); if (caup) caup.addEventListener('change', apply);
     const cvol = el('c-volnorm'); if (cvol) cvol.addEventListener('change', apply);
+    const caudio360 = el('c-audio360'); if (caudio360) caudio360.addEventListener('change', apply);
   
   const seq = el('s-eq'); if (seq) seq.addEventListener('change', apply);
 
@@ -298,4 +329,5 @@ document.addEventListener('DOMContentLoaded', () => {
     urlGo.addEventListener('click', handleGo);
     urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleGo(); });
   }
+
 });

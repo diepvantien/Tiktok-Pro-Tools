@@ -28,7 +28,9 @@
       cleanMode: false,
       unlockShop: false,
       blockKeywords: '',
-    volNorm: false
+      volNorm: false,
+      autoPiP: true,
+      audio360: false
     };
 
   // ─── CAPTURE ORIGINALS ───────────────────────────────────────────────────────
@@ -195,16 +197,33 @@ chrome.runtime.onMessage.addListener((msg) => {
 // ─── AUDIO EQUALIZER ─────────────────────────────────────────────────────────
   const audioContextMap = new WeakMap();
 
+  document.addEventListener('pointerdown', () => {
+      document.querySelectorAll('video').forEach(v => {
+          const nodes = audioContextMap.get(v);
+          if (nodes && nodes.ctx && nodes.ctx.state === 'suspended') {
+              nodes.ctx.resume().catch(()=>{});
+          }
+      });
+  }, { capture: true });
+
   function applyEqToVideo(videoElement) {
-    if (cfg.eq === 'normal' && !cfg.eqBass && !cfg.eqMid && !cfg.eqTreble && !cfg.volNorm) return;
+    if (cfg.eq === 'normal' && !cfg.eqBass && !cfg.eqMid && !cfg.eqTreble && !cfg.volNorm && !cfg.audio360) return;
+
     if (!videoElement.hasAttribute('crossorigin')) {
-        try { videoElement.crossOrigin = "anonymous"; } catch(e){}
+        try { 
+            videoElement.crossOrigin = "anonymous"; 
+            // Cần force reload src nếu src đã chạy để nhận crossorigin (nếu không sẽ silence WebAudio)
+            // Tuy nhiên reload sẽ giật khung hình, ta chỉ set trước. hook.js cũng có làm việc này.
+        } catch(e){}
     }
+
     
     // Yêu cầu có tương tác người dùng mới bật AudioContext
-    if (!navigator.userActivation || !navigator.userActivation.hasBeenActive) {
-        return; // Đợi user tương tác
-    }
+
+    // Yêu cầu có tương tác người dùng mới bật AudioContext
+    // Nhưng nếu return ở đây, nó sẽ không bao giờ khởi tạo cho video đang có!
+    // -> Khởi tạo ở trạng thái suspended, khi click sẽ resume
+
 
     if (videoElement._audioContextCreated) {
         let audioNodes = audioContextMap.get(videoElement);
@@ -242,13 +261,30 @@ chrome.runtime.onMessage.addListener((msg) => {
         compNode.attack.value = 0.003;
         compNode.release.value = 0.25;
 
-        source.connect(compNode);
-        compNode.connect(bassNode);
-        bassNode.connect(midNode);
-        midNode.connect(trebleNode);
-        trebleNode.connect(ctx.destination);
+        // 360 Audio (8D) setup
+        const pannerNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+        if (pannerNode) {
+            if (!window._tptPanners) window._tptPanners = [];
+            window._tptPanners.push(pannerNode);
+            
+            // Re-route with panner
+            source.connect(compNode);
+            compNode.connect(bassNode);
+            bassNode.connect(midNode);
+            midNode.connect(trebleNode);
+            trebleNode.connect(pannerNode);
+            pannerNode.connect(ctx.destination);
+            
+            audioContextMap.set(videoElement, { ctx, bassNode, midNode, trebleNode, compNode, pannerNode });
+        } else {
+            source.connect(compNode);
+            compNode.connect(bassNode);
+            bassNode.connect(midNode);
+            midNode.connect(trebleNode);
+            trebleNode.connect(ctx.destination);
 
-        audioContextMap.set(videoElement, { ctx, bassNode, midNode, trebleNode, compNode });
+            audioContextMap.set(videoElement, { ctx, bassNode, midNode, trebleNode, compNode });
+        }
       } catch (e) {
         // Silently ignore if AudioContext fails (e.g. InvalidStateError in background or already connected)
         // console.debug("EQ init skipped for this video element");
@@ -303,6 +339,24 @@ chrome.runtime.onMessage.addListener((msg) => {
         break;
     }
   }
+  
+  // ─── 360 AUDIO ANIMATION (8D) ────────────────────────────────────────────────
+  let _panAngle = 0;
+  setInterval(() => {
+    if (!cfg.audio360 || !window._tptPanners) {
+        if (window._tptPanners) {
+            window._tptPanners.forEach(p => {
+                if (p.pan.value !== 0) p.pan.value = 0;
+            });
+        }
+        return;
+    }
+    _panAngle += 0.05; // speed of panning
+    const panValue = Math.sin(_panAngle) * 0.8; // range -0.8 (left) to 0.8 (right)
+    window._tptPanners.forEach(p => {
+        try { p.pan.value = panValue; } catch(e){}
+    });
+  }, 50);
 
   // ─── CLEAN MODE ──────────────────────────────────────────────────────────────
   let tptStyleElement = null;
@@ -398,7 +452,7 @@ chrome.runtime.onMessage.addListener((msg) => {
         loader.innerHTML = `
           <div style="width:36px; height:36px; border:4px solid rgba(255,255,255,0.2); border-top-color:#fe2c55; border-radius:50%; animation:tpt-spin 1s linear infinite;"></div>
           <style>@keyframes tpt-spin { 100% { transform: rotate(360deg); } }</style>
-          <div style="margin-top:14px; font-weight:600; font-size:13px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Đang mở video TikTok Shop...</div>
+          <div style="margin-top:14px; font-weight:600; font-size:13px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Opening TikTok Shop video...</div>
         `;
         
         if (window.getComputedStyle(wrapper).position === 'static') {
@@ -417,6 +471,7 @@ chrome.runtime.onMessage.addListener((msg) => {
             newVid.autoplay = true;
             newVid.loop = true;
             newVid.muted = false;
+            newVid.dataset.tptShopInjected = "true";
             newVid.style.cssText = `
               object-fit: contain; width: 100%; height: 100%;
               position: absolute; top: 0; left: 0; z-index: 999;
@@ -431,7 +486,7 @@ chrome.runtime.onMessage.addListener((msg) => {
             console.log("TPT: Shop Video unlocked with direct link!");
           } else {
             console.log("TPT: Failed to fetch bypass link", res);
-            loader.innerHTML = `<div style="color:#ff3b30; font-weight:600; font-size:13px;">Không thể mở video này! (API lỗi)</div>`;
+            loader.innerHTML = `<div style="color:#ff3b30; font-weight:600; font-size:13px;">Cannot open this video! (API error)</div>`;
             setTimeout(() => {
               loader.remove();
               _shopFetching.delete(wrapper); 
@@ -468,13 +523,19 @@ function doScrollNext() {
     const video = document.querySelector('video');
     if (video && video.paused && !video.dataset.pausedByExtension) video.play().catch(()=>{});
 
-    // 1. Try finding the standard "Down" arrow in the feed (for TV mode or specific layouts)
-    const btnDown = document.querySelector('[data-e2e="arrow-right"]') || document.querySelector('button[data-e2e="video-switch-next"]');
+    // 1. Try finding the standard "Down/Next" arrow in the feed
+    const btnDown = document.querySelector('[data-e2e="arrow-right"]') 
+                 || document.querySelector('[data-e2e="arrow-down"]') 
+                 || document.querySelector('button[data-e2e="video-switch-next"]');
     if (btnDown) {
         _logScroll("Found next button, clicking it.");
         btnDown.click();
     } else {
-        // 2. Try the keyboard fallback (ArrowDown) targeting a valid DOM element with a tagName
+        // 2. Try smooth scrolling
+        _logScroll("Next button not found, falling back to window.scrollBy.");
+        window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+        
+        // 3. Try the keyboard fallback (ArrowDown) targeting a valid DOM element with a tagName
         _logScroll("Next button not found, trying KeyboardEvent (ArrowDown).");
         const e = new KeyboardEvent('keydown', { 
             key: 'ArrowDown', 
@@ -487,44 +548,48 @@ function doScrollNext() {
             view: window
         });
         
-        // Dispatch strictly on the closest feed container or #app, it must have a tagName to not crash React
         const targetElement = (video ? video.closest('[data-e2e="recommend-list-item-container"]') : null) 
                             || document.getElementById('app') 
-                            || document.documentElement; // html has a tagname
+                            || document.documentElement;
                             
         targetElement.dispatchEvent(e);
         _logScroll("Keyboard event dispatched on: " + targetElement.tagName);
-        
-        // 3. Fallback: Emulate TikTok App scrollBy
-        setTimeout(() => {
-            const v = document.querySelector('video');
-            if (v) {
-                const wheelEvent = new WheelEvent('wheel', {
-                    deltaY: 1000,
-                    bubbles: true,
-                    cancelable: true,
-                    composed: true,
-                    view: window
-                });
-                
-                const container = v.closest('[data-e2e="recommend-list-item-container"]') || v.closest('div[class*="DivItemContainer"]');
-                const feedWrapper = document.querySelector('[data-e2e="recommend-list-item-container"]')?.parentElement || document.getElementById('app');
-                
-                if (feedWrapper) {
-                    _logScroll("Wheel event dispatched on feed parent.");
-                    feedWrapper.dispatchEvent(wheelEvent);
-                }
-                
-                // Final safety: Native scrollTo override
-                if (container && container.nextElementSibling) {
-                    _logScroll("Native scrollBy fallback executed.");
-                    container.parentElement.scrollBy({ top: window.innerHeight, behavior: 'auto' });
-                }
-            }
-        }, 150);
     }
     
-    setTimeout(() => { _scrollCooldown = false; }, 2000); // 2 second cooldown
+    setTimeout(() => { _scrollCooldown = false; }, 2000);
+}
+
+function doScrollPrev() {
+    if (_scrollCooldown) return;
+    _scrollCooldown = true;
+    _logScroll("Attempting to scroll to the previous video...");
+    
+    const btnUp = document.querySelector('[data-e2e="arrow-left"]') 
+               || document.querySelector('[data-e2e="arrow-up"]') 
+               || document.querySelector('button[data-e2e="video-switch-prev"]');
+    if (btnUp) {
+        btnUp.click();
+    } else {
+        window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+        const e = new KeyboardEvent('keydown', { 
+            key: 'ArrowUp', 
+            code: 'ArrowUp', 
+            keyCode: 38, 
+            which: 38, 
+            bubbles: true, 
+            cancelable: true,
+            composed: true,
+            view: window
+        });
+        const video = document.querySelector('video');
+        const targetElement = (video ? video.closest('[data-e2e="recommend-list-item-container"]') : null) 
+                            || document.getElementById('app') 
+                            || document.documentElement;
+                            
+        targetElement.dispatchEvent(e);
+    }
+    
+    setTimeout(() => { _scrollCooldown = false; }, 2000);
 }
 
 function handleVideoTimeUpdate(e) {
@@ -568,8 +633,157 @@ function setupAutoScrollFeature(v) {
     });
 }
 
+// ═══════════════════════════════════════════
+//  ĐĂNG KÝ AUTO PIP MEDIA SESSION CHROME
+// ═══════════════════════════════════════════
+let autoPiPSupported = false;
+
+function initMediaSessionPiP() {
+    if (!('mediaSession' in navigator)) {
+        console.log('[TPT-PiP] Trình duyệt không hỗ trợ Media Session');
+        return;
+    }
+
+    try {
+        navigator.mediaSession.setActionHandler('enterpictureinpicture', async () => {
+            if (!cfg.autoPiP) return;
+            const video = _best();
+            if (!video) return;
+
+            video.removeAttribute('disablepictureinpicture');
+            video.disablePictureInPicture = false;
+
+            try {
+                await video.requestPictureInPicture();
+                console.log('[TPT-PiP] ✅ Auto PiP đã bật thành công via Chrome Native');
+            } catch (e) {
+                console.log('[TPT-PiP] Lỗi mở PiP:', e.message);
+                fallbackPiPBtn();
+            }
+        });
+        
+        // Đăng ký Next/Prev Track bằng Media Session để bấm/cuộn qua media keys/PiP UI
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            console.log('[TPT-PiP] User triggered Next Track from PiP / Media keys');
+            doScrollNext();
+            setTimeout(updateMediaSession, 100);
+        });
+        
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            console.log('[TPT-PiP] User triggered Prev Track from PiP / Media keys');
+            doScrollPrev();
+            setTimeout(updateMediaSession, 100);
+        });
+
+        // Hỗ trợ bắt Wheel (Cuộn chuột) ngay trong cửa sổ PiP. 
+        // Chrome 115+ sẽ tự động chuyển tiếp event wheel đè lên PiP window trả về cho thẻ video gốc đang chiếm PiP
+        window.addEventListener('wheel', (e) => {
+            if (document.pictureInPictureElement) {
+                // Chỉ nhận scroll nếu con trỏ chuột nằm trên cửa sổ PiP -> Wheel event routing vào document.pictureInPictureElement
+                if (e.target === document.pictureInPictureElement) {
+                    if (Math.abs(e.deltaY) > 10) {
+                        e.preventDefault(); // Tránh cuộn lung tung trên trang mẹ
+                        if (e.deltaY > 0) doScrollNext();
+                        else doScrollPrev();
+                        setTimeout(updateMediaSession, 100);
+                    }
+                }
+            }
+        }, {passive: false});
+
+        autoPiPSupported = true;
+        console.log('[TPT-PiP] ✅ Đã đăng ký Media Session Auto PiP Handler');
+    } catch (e) {
+        autoPiPSupported = false;
+        console.log('[TPT-PiP] ⚠️ Media Session Handler bị lỗi:', e.message);
+    }
+}
+
+function updateMediaSession() {
+    if (!cfg.autoPiP || !autoPiPSupported) return;
+    const video = _best();
+    if (!video) return;
+
+    if (!document.pictureInPictureElement) {
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'TikTok Pro Tools',
+                artist: 'Auto PiP Enabled',
+                artwork: []
+            });
+            navigator.mediaSession.playbackState = video.paused ? 'paused' : 'playing';
+        } catch(e) {}
+    }
+}
+
+function setupAutoPiPVideo(v) {
+    if (!v.dataset.tptPipHooked) {
+        v.dataset.tptPipHooked = 'true';
+        v.addEventListener('playing', () => {
+            if (cfg.autoPiP && document.pictureInPictureElement && document.pictureInPictureElement !== v) {
+                console.log('[TPT-PiP] Tự động chuyển PiP sang video mới.');
+                v.requestPictureInPicture().catch(console.error);
+            }
+        });
+    }
+    if (!cfg.autoPiP) {
+        v.removeAttribute('autopictureinpicture');
+        try { v.autoPictureInPicture = false; } catch(e) {}
+        return;
+    }
+    v.setAttribute('autopictureinpicture', 'true');
+    v.removeAttribute('disablepictureinpicture');
+    try { 
+        v.autoPictureInPicture = true; 
+        v.disablePictureInPicture = false; 
+    } catch(e) {}
+}
+
+function fallbackPiPBtn() {
+    try {
+        const btn = document.querySelector('[data-e2e="more-menu-popover_mini-player"]');
+        if(btn) btn.click();
+    } catch(e) {}
+}
+
+
+  const getUrlForVideo = (v) => {
+      // Find the first parent that has an a tag with /video/, /v/ or /photo/
+      let current = v;
+      for (let i = 0; i < 15; i++) { // search up to 15 levels deep
+          if (!current || current === document.body) break;
+          const a = current.querySelector('a[href*="/video/"], a[href*="/v/"], a[href*="/photo/"]');
+          if (a && a.href) return a.href.split('?')[0];
+          current = current.parentElement;
+      }
+      
+      // Broader search in common container prefixes
+      let p = v.closest('div');
+      while (p && p !== document.body) {
+          const a = p.querySelector('a[href*="/video/"], a[href*="/v/"], a[href*="/photo/"]');
+          if (a && a.href) return a.href.split('?')[0];
+          p = p.parentElement;
+      }
+
+      const fallbackUrl = location.href.split('?')[0]; 
+      if (fallbackUrl.includes('/video/') || fallbackUrl.includes('/v/') || fallbackUrl.includes('/photo/')) {
+          return fallbackUrl;
+      }
+      return null;
+  };
+
+  const getTitleForVideo = (v) => {
+      let p = v.closest('div[class*="DivItemContainer"], div[data-e2e="recommend-list-item-container"]');
+      if (p) {
+          const desc = p.querySelector('[data-e2e="video-desc"]');
+          if (desc) return desc.textContent.trim();
+      }
+      return document.title.split('|')[0].trim();
+  };
+
+
 function _applyAll() {
-    
+    updateMediaSession();
     document.querySelectorAll('video').forEach(v => {
       // 4. Force Unmute dynamically once if we automatically muted it
         if (v.dataset.tptAutoMuted === "true" && navigator.userActivation && navigator.userActivation.hasBeenActive) {
@@ -581,8 +795,16 @@ function _applyAll() {
         
         if (Math.abs(v.playbackRate - cfg.speed) > 0.05) v.playbackRate = cfg.speed;
       setupAutoScrollFeature(v);
-      setupAutoScrollFeature(v);
       applyEqToVideo(v);
+      setupAutoPiPVideo(v);
+      
+      // Stop out-of-view injected shop videos
+      if (v.dataset.tptShopInjected) {
+          const rect = v.getBoundingClientRect();
+          const isVisible = rect.height > 0 && rect.top >= -500 && rect.bottom <= window.innerHeight + 500;
+          if (!isVisible && !v.paused) v.pause();
+          else if (isVisible && v.paused && !document.pictureInPictureElement) v.play().catch(()=>{});
+      }
     });
     updateInjectedStyles();
     checkShopVideos();
@@ -608,16 +830,13 @@ function _applyAll() {
       if (s.cleanMode !== undefined) { cfg.cleanMode = s.cleanMode; _applyAll(); }
       if (s.unlockShop !== undefined) { cfg.unlockShop = s.unlockShop; _applyAll(); }
       if (s.autoScroll !== undefined) { cfg.autoScroll = s.autoScroll; _applyAll(); }
+      if (s.autoPiP !== undefined) { cfg.autoPiP = s.autoPiP; _applyAll(); }
           if (s.blockKeywords !== undefined) { cfg.blockKeywords = s.blockKeywords; _applyAll(); }
     if (s.autoPauseAudio !== undefined) { cfg.autoPauseAudio = s.autoPauseAudio; }
+    if (s.audio360 !== undefined) { cfg.audio360 = s.audio360; _applyAll(); }
     if (s.volNorm !== undefined) { cfg.volNorm = s.volNorm; _applyAll(); }
     }
   });
-
-  
-  
-
-  
 
   // Fallback Interval để rà quét các chức năng (kể cả khi tab bị chrome làm chậm ngầm)
   setInterval(() => {
@@ -661,6 +880,8 @@ function _applyAll() {
   chrome.storage.sync.get(null, data => {
     cfg = Object.assign(cfg, data);
     if (cfg.backgroundPlay) enableBgPlay();
+    setTimeout(initMediaSessionPiP, 500);
         _applyAll();
   });
 })();
+
