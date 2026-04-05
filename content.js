@@ -423,7 +423,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       }
 
       // Tiêu chí bổ sung: Chữ "Xem video" hoặc icon báo lỗi của tiktok
-      const hasErrorText = /TikTok Shop|(video|Nội dung) (này )?(không khả dụng|bị giới hạn)/i.test(wrapper.innerText || "");
+      const hasErrorText = /TikTok Shop|(video|Nội dung|content).*?(không khả dụng|bị giới hạn|unavailable|restricted|not available)/i.test(wrapper.innerText || "");
 
       if (isBlocked || (!vid && hasErrorText)) {
         let targetUrl = window.location.href;
