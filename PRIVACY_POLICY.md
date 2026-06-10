@@ -16,7 +16,6 @@ To provide its functionality, the extension requires specific Chrome browser per
 
 - **Host Permissions (`*://*.tiktok.com/*`)**: Required to inject scripts that control the video player (e.g., speed control, equalizer, Auto PiP, auto-pause) and customize the TikTok interface (e.g., clean mode, removing text overlays).
 - **Host Permissions (`https://tikwm.com/*`)**: Required to fetch fast and watermark-free video download links when requested by the user.
-- **`scripting`**: Needed to execute the user-customized features directly onto the active TikTok webpage.
 - **`storage`**: Used exclusively to save your local extension settings (e.g., your preferred playback speed, EQ presets, and blocked keywords) directly on your device.
 - **`downloads`**: Allows the extension to trigger the native Chrome download manager to save videos and audio directly to your hard drive.
 - **`declarativeNetRequest`**: Used strictly to modify network headers to bypass region locks and unlock regional shop videos for the user locally.
