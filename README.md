@@ -6,10 +6,10 @@
 
 **Supercharge your TikTok web experience with playback controls, advanced audio tools, cleaner viewing, TikTok Shop utilities, and media downloads.**
 
-[![Install on Chrome Web Store](https://img.shields.io/badge/Install-Chrome%20Web%20Store-4285F4?style=for-the-badge\&logo=googlechrome\&logoColor=white)](https://chromewebstore.google.com/detail/tiktok-pro-tools/kpamdlioiocdedfbjmmicgbcdmebpkli)
+[![Install on Chrome Web Store](https://img.shields.io/badge/Install-Chrome%20Web%20Store-4285F4?style=for-the-badge\&logo=googlechrome\&logoColor=white)](https://chromewebstore.google.com/detail/shortkit-%E2%80%93-level-up-your/kcihaacmobnfpcellccakhmbhkjdlkbf)
 [![Install on Firefox Add-ons](https://img.shields.io/badge/Install-Firefox%20Add--ons-FF7139?style=for-the-badge\&logo=firefoxbrowser\&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/tiktok-pro-tools-official/)
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/kpamdlioiocdedfbjmmicgbcdmebpkli?label=Chrome%20version\&style=flat-square\&logo=googlechrome)](https://chromewebstore.google.com/detail/tiktok-pro-tools/kpamdlioiocdedfbjmmicgbcdmebpkli)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/kpamdlioiocdedfbjmmicgbcdmebpkli?label=Chrome%20version\&style=flat-square\&logo=googlechrome)](https://chromewebstore.google.com/detail/shortkit-%E2%80%93-level-up-your/kcihaacmobnfpcellccakhmbhkjdlkbf)
 [![Firefox Add-on](https://img.shields.io/amo/v/tiktok-pro-tools-official?label=Firefox%20version\&style=flat-square\&logo=firefoxbrowser)](https://addons.mozilla.org/en-US/firefox/addon/tiktok-pro-tools-official/)
 [![GitHub Stars](https://img.shields.io/github/stars/diepvantien/Tiktok-Pro-Tools?style=flat-square\&logo=github)](https://github.com/diepvantien/Tiktok-Pro-Tools/stargazers)
 
